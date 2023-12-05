@@ -1,16 +1,16 @@
 /// <reference types="vite/client" />
 
-import { feathers } from '@feathersjs/feathers'
+import {feathers} from '@feathersjs/feathers'
 import authentication from '@feathersjs/authentication-client'
 import socketio from '@feathersjs/socketio-client'
 import io from 'socket.io-client'
-import type { MessagesResult } from './dist/server/messages/messages.schema.ts'
-import type { UsersData } from './dist/server/users/users.schema.ts'
+import type {MessagesResult} from './dist/server/messages/messages.schema.ts'
+import type {UsersData} from './dist/server/users/users.schema.ts'
 
 // Establish a Socket.io connection
 const socket = io(import.meta.env.VITE_FV_URL, {
   transports: ['websocket'],
-  reconnectionDelay: import.meta.env.DEV ? 60 : 1000,
+  reconnectionDelay: import.meta.env.DEV ? 60 : 1000
 })
 // Initialize our Feathers client application through Socket.io
 const client = feathers()
@@ -18,14 +18,11 @@ client.configure(socketio(socket))
 client.configure(authentication())
 
 // UNSAFELY safely escape HTML
-const escape = (str: any) =>
-  str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const escape = (str: any) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 const appEl = document.getElementById('app') as HTMLDivElement
 const store = {
-  holiday: import.meta.env.VITE_HOLIDAY
-    ? JSON.parse(import.meta.env.VITE_HOLIDAY)
-    : {},
+  holiday: import.meta.env.VITE_HOLIDAY ? JSON.parse(import.meta.env.VITE_HOLIDAY) : {}
 }
 const loginScreenHTML = `<main class="login container">
   <div class="row">
@@ -109,9 +106,7 @@ const addUser = (user: UsersData) => {
 
   // Update the number of users
   const userCount = document.querySelectorAll('.user-list li').length
-  const onlineEl = document.querySelector(
-    '.online-count'
-  ) as HTMLParagraphElement
+  const onlineEl = document.querySelector('.online-count') as HTMLParagraphElement
   onlineEl.innerText = '' + userCount
 }
 
@@ -135,17 +130,16 @@ const addMessage = (message: MessagesResult) => {
 
   // Escape HTML to prevent XSS attacks
   const text = message.userId === 0 ? message.text : escape(message.text) // task: use DOM instead
-  const dtf = new Intl.DateTimeFormat(undefined, { timeStyle: 'short' })
-  const prettyD = message.createdAt
-    ? dtf.format(new Date(message.createdAt as string))
-    : ''
+  const dtf = new Intl.DateTimeFormat(undefined, {timeStyle: 'short'})
+  const prettyD = message.createdAt ? dtf.format(new Date(message.createdAt as string)) : ''
+
+  //adds a heart to liked messages.
+  const isLikedClass = message.isLiked ? ' isLiked' : ''
 
   if (chat) {
     const img = `<img src="${user.avatar}" alt="${user.name}" class="avatar" crossorigin="anonymous">`
-    const userName = `<span class="username font-600">${escape(
-      user.name || ''
-    )}</span>`
-    chat.innerHTML += `<div class="${messageId} message flex flex-row">${img}
+    const userName = `<span class="username font-600">${escape(user.name || '')}</span>`
+    chat.innerHTML += `<div class="${messageId} message flex flex-row${isLikedClass}">${img}
       <div class="message-wrapper">
         <p class="message-header"> ${userName}
           <span class="sent-date font-300">${prettyD}</span>
@@ -163,10 +157,7 @@ const addMessage = (message: MessagesResult) => {
 const showLogin = (error?: any) => {
   const headingEl = document.querySelector('.heading')
   if (document.querySelectorAll('.login').length && error && headingEl) {
-    headingEl.insertAdjacentHTML(
-      'beforeend',
-      `<p>There was an error: ${error.message}</p>`
-    )
+    headingEl.insertAdjacentHTML('beforeend', `<p>There was an error: ${error.message}</p>`)
   }
   appEl.innerHTML = loginScreenHTML
 }
@@ -178,9 +169,9 @@ const showChat = async () => {
   // Find the latest 25 messages. They will come with the newest first
   const messages = await client.service('messages').find({
     query: {
-      $sort: { createdAt: -1 },
-      $limit: 25,
-    },
+      $sort: {createdAt: -1},
+      $limit: 25
+    }
   })
 
   // We want to show the newest message last
@@ -195,21 +186,16 @@ const showChat = async () => {
 
 // Retrieve email/password object from the login/signup page
 const getCredentials = () => {
-  const defDev = { email: 'you@example.com', password: 'password' }
-  const dev = import.meta.env.DEV
-    ? { ...defDev, ...JSON.parse(import.meta.env.VITE_FV_DEV_USER || '') }
-    : false
-  const email =
-    document.querySelector<HTMLInputElement>('[name="email"]')?.value || ''
-  const password =
-    document.querySelector<HTMLInputElement>('[name="password"]')?.value || ''
-  document.querySelector<HTMLInputElement>('[name="password"]')?.value ||
-    '' + Math.random()
+  const defDev = {email: 'you@example.com', password: 'password'}
+  const dev = import.meta.env.DEV ? {...defDev, ...JSON.parse(import.meta.env.VITE_FV_DEV_USER || '')} : false
+  const email = document.querySelector<HTMLInputElement>('[name="email"]')?.value || ''
+  const password = document.querySelector<HTMLInputElement>('[name="password"]')?.value || ''
+  document.querySelector<HTMLInputElement>('[name="password"]')?.value || '' + Math.random()
 
   if (dev) {
-    return { email: email || dev.email, password: password || dev.password }
+    return {email: email || dev.email, password: password || dev.password}
   } else {
-    return { email, password }
+    return {email, password}
   }
 }
 
@@ -220,7 +206,7 @@ const login = async (credentials?: any): Promise<boolean> => {
       // log in with the `local` strategy using the credentials we got
       await client.authenticate({
         strategy: 'local',
-        ...credentials,
+        ...credentials
       })
     } else {
       try {
@@ -265,11 +251,12 @@ const signup = async () => {
   }
 }
 
-const addEventListener = (
-  selector: string,
-  event: string,
-  handler: Function
-) => {
+const updateLikeStatus = (messageId: number) => {
+  const messageEl = document.querySelector(`.messageId-${messageId}`)
+  messageEl?.classList.toggle('isLiked')
+}
+
+const addEventListener = (selector: string, event: string, handler: Function) => {
   document.addEventListener(event, async (ev: any) => {
     if (ev?.target?.closest(selector)) {
       handler(ev)
@@ -301,11 +288,34 @@ addEventListener('#send-message', 'submit', async (ev: any) => {
 
   // Create a new message and then clear the input field
   await client.service('messages').create({
-    text: input.value,
+    text: input.value
   })
 
   input.value = ''
 })
+
+// listen for message double clicks and use event delegation
+document.addEventListener('dblclick', (ev: any) => {
+  // Find the parent message element that was clicked.
+  const target = ev?.target?.closest('.message')
+
+  if (target) {
+    const classListArray: string[] = Array.from(target.classList)
+    const messageIdString = classListArray.filter(str => str.includes('messageId'))[0]
+    const messageIdNum = parseInt(messageIdString.split('-')[1], 10)
+
+    callMessageLikedApi(messageIdNum)
+  }
+})
+
+const callMessageLikedApi = (messageId: number) => {
+  console.log(messageId)
+
+  // Please add an API call here
+
+  // On response from API call updateLikeStatus, this example holds this state on the dom element but does not persist with
+  updateLikeStatus(messageId)
+}
 
 const main = async () => {
   // Real-time event listeners for messages and users
@@ -313,16 +323,11 @@ const main = async () => {
   client.service('messages').on('updated', addMessage)
   client.service('users').on('created', addUser)
 
-  store.holiday.accentColor &&
-    document.body.style.setProperty('--accent-color', store.holiday.accentColor)
+  store.holiday.accentColor && document.body.style.setProperty('--accent-color', store.holiday.accentColor)
 
   // - If DEV, login w jwt, login w dev user, or make dev user.
   // - else, login w jwt, or show login
-  if (
-    import.meta.env.DEV &&
-    (await login()) === false &&
-    (await login(getCredentials())) === false
-  ) {
+  if (import.meta.env.DEV && (await login()) === false && (await login(getCredentials())) === false) {
     await signup() // attempt to signup with dev creds
   } else if ((await login()) === false) {
     showLogin()

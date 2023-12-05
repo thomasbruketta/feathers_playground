@@ -41,6 +41,29 @@
       .button-primary:focus {
         filter: brightness(0.8);
       }
+      .message {
+        position: relative;
+        max-width: 600px;
+        border: 1px solid #ccc;
+        border-radius: 25px;
+        margin-bottom: 20px;
+        padding: 5px;
+      }
+      .message:after {
+        content: '🫀';
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        font-size: 30px;
+        opacity: 0;
+        transform: scale(0.7);
+        transition: transform ease 500ms, opacity ease 500ms;
+        will-change: transform;
+      }
+      .message.isLiked:after {
+        opacity: 1;
+        transform: scale(1);
+      }
     </style>
   </head>
   <body>

@@ -1,7 +1,5 @@
-import { querySyntax, Infer, schema, Ajv } from '@feathersjs/schema'
-import {
-  UsersResult
-} from '../../services/users/users.schema.js'
+import {querySyntax, Infer, schema, Ajv} from '@feathersjs/schema'
+import {UsersResult} from '../../services/users/users.schema.js'
 
 const ajv = new Ajv()
 
@@ -21,6 +19,9 @@ export const messagesDataSchema = schema(
       },
       createdAt: {
         type: 'string'
+      },
+      isLiked: {
+        type: 'boolean'
       }
     }
   } as const,
