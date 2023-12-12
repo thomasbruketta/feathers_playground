@@ -20,9 +20,6 @@ export const messagesDataSchema = schema(
       createdAt: {
         type: 'string'
       },
-      isLiked: {
-        type: 'boolean'
-      }
     }
   } as const,
   ajv

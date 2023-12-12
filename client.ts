@@ -303,15 +303,16 @@ document.addEventListener('dblclick', (ev: any) => {
     const classListArray: string[] = Array.from(target.classList)
     const messageIdString = classListArray.filter(str => str.includes('messageId'))[0]
     const messageIdNum = parseInt(messageIdString.split('-')[1], 10)
-
-    callMessageLikedApi(messageIdNum)
+    const isLiked = classListArray.includes('isLiked');
+    callMessageLikedApi(messageIdNum, isLiked)
   }
 })
 
-const callMessageLikedApi = (messageId: number) => {
+const callMessageLikedApi = (messageId: number, isLiked: boolean) => {
   console.log(messageId)
 
   // Please add an API call here
+  client.service('messages').patch(messageId, {isLiked: !isLiked})
 
   // On response from API call updateLikeStatus, this example holds this state on the dom element but does not persist with
   updateLikeStatus(messageId)
