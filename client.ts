@@ -133,8 +133,10 @@ const addMessage = (message: MessagesResult) => {
   const dtf = new Intl.DateTimeFormat(undefined, {timeStyle: 'short'})
   const prettyD = message.createdAt ? dtf.format(new Date(message.createdAt as string)) : ''
 
+  const likeCount = message.likes?.length
+
   //adds a heart to liked messages.
-  const isLikedClass = message.isLiked ? ' isLiked' : ''
+  const isLikedClass = likeCount ? ' isLiked' : ''
 
   if (chat) {
     const img = `<img src="${user.avatar}" alt="${user.name}" class="avatar" crossorigin="anonymous">`
@@ -146,7 +148,8 @@ const addMessage = (message: MessagesResult) => {
         </p>
         <p class="${contentClass} font-300">${text}</p>
       </div>
-    </div>`
+    </div>
+    <div class="likes${isLikedClass}">❤️${likeCount}</div>`
 
     // Always scroll to the bottom of our message list
     chat.scrollTop = chat.scrollHeight - chat.clientHeight
@@ -295,34 +298,72 @@ addEventListener('#send-message', 'submit', async (ev: any) => {
 })
 
 // listen for message double clicks and use event delegation
-document.addEventListener('dblclick', (ev: any) => {
+document.addEventListener('dblclick', async (ev: any) => {
   // Find the parent message element that was clicked.
-  const target = ev?.target?.closest('.message')
+  const target = ev?.target?.closest('.message');
 
   if (target) {
+    const userId = await getCurrentUserId();
+    if (userId) {
+        console.log('Current User ID:', userId);
+    } else {
+        console.log('No user is currently logged in');
+    }
     const classListArray: string[] = Array.from(target.classList)
     const messageIdString = classListArray.filter(str => str.includes('messageId'))[0]
-    const messageIdNum = parseInt(messageIdString.split('-')[1], 10)
-    const isLiked = classListArray.includes('isLiked');
-    callMessageLikedApi(messageIdNum, isLiked)
+    const messageId = parseInt(messageIdString.split('-')[1], 10)
+
+    try {
+      //get message data for this message
+      const messageData = await client.service('messages').get(messageId);
+    
+      if (messageData.likes && messageData.likes.includes(userId)) {
+        // Unlike the message
+        //ts-ignore 
+        await (client as any).service('likes').unlike(messageId, userId);
+        // Update UI to reflect the unlike
+      } else {
+        await (client as any).service('likes').like(messageId, userId);
+      }
+    } catch (error) {
+      console.error('Error handling message like/unlike:', error);
+    }
+    
+    // const isLiked = classListArray.includes('isLiked');
+
+    // callMessageLikedApi(messageIdNum, isLiked)
   }
 })
 
-const callMessageLikedApi = (messageId: number, isLiked: boolean) => {
-  console.log(messageId)
-
-  // Please add an API call here
-  client.service('messages').patch(messageId, {isLiked: !isLiked})
-
-  // On response from API call updateLikeStatus, this example holds this state on the dom element but does not persist with
-  updateLikeStatus(messageId)
+async function getCurrentUserId() {
+  try {
+      const response = await client.reAuthenticate();
+      const userId = response.user.id || response.user._id; // Adjust depending on your user model
+      return userId;
+  } catch (error) {
+      console.error('Error obtaining current user:', error);
+      return null;
+  }
 }
+
+
+// const callMessageLikedApi = (messageId: number, isLiked: boolean) => {
+//   console.log(messageId)
+
+//   // Please add an API call here
+//   client.service('messages').patch(messageId, {isLiked: !isLiked})
+
+//   // On response from API call updateLikeStatus, this example holds this state on the dom element but does not persist with
+//   updateLikeStatus(messageId)
+// }
 
 const main = async () => {
   // Real-time event listeners for messages and users
   client.service('messages').on('created', addMessage)
   client.service('messages').on('updated', addMessage)
   client.service('users').on('created', addUser)
+  client.service('likes').on('like', showChat);
+  client.service('likes').on('unlike', showChat);
 
   store.holiday.accentColor && document.body.style.setProperty('--accent-color', store.holiday.accentColor)
 

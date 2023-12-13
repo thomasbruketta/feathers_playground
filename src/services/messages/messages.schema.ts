@@ -20,8 +20,8 @@ export const messagesDataSchema = schema(
       createdAt: {
         type: 'string'
       },
-      isLiked: {
-        type: 'boolean',
+      likes: {
+        type: 'array',
       }
     }
   } as const,
